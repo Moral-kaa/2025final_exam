@@ -1,0 +1,59 @@
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: Arial, sans-serif;
+  max-width: 700px;
+  margin: auto;
+  padding: 20px;
+  background: #f6f7fa;
+}
+h2 {
+  color: #333;
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+.progress {
+  margin: 10px 0 16px;
+  color: #666;
+  font-size: 14px;
+}
+.option {
+  margin: 10px 0;
+  cursor: pointer;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 16px;
+  transition: background 0.3s;
+  line-height: 1.5;
+}
+.option.correct { background-color: #d4edda; }
+.option.wrong { background-color: #f8d7da; }
+.option.selected { border: 2px solid #4285f4; background: #eaf1fb; }
+.explanation {
+  margin-top: 14px;
+  font-style: italic;
+  color: #555;
+}
+button {
+  margin-top: 24px;
+  padding: 10px 24px;
+  font-size: 17px;
+  border: none;
+  border-radius: 6px;
+  background: #4285f4;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: background 0.2s;
+  outline: none;
+}
+button:hover {
+  background: #2a6ad7;
+}
+@media (max-width: 600px) {
+  body { padding: 8px; }
+  h2 { font-size: 18px; }
+  .option { font-size: 15px; padding: 10px; }
+  button { font-size: 16px; padding: 10px 0; width: 100%; }
+}
