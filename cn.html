@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>计算机网络选择练习</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 回到首页浮动按钮 -->
+<a href="../index.html" 
+   style="
+    position:fixed;
+    right:20px;
+    bottom:90px;   /* 避开切换按钮 */
+    z-index:999;
+    background:#4285f4;
+    color:#fff;
+    border:none;
+    border-radius:50%;
+    width:60px;
+    height:60px;
+    line-height:60px;
+    text-align:center;
+    font-size:18px;
+    text-decoration:none;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);"
+>
+  首页
+</a>
+
+<h2 id="questionTitle">计算机网络选择练习</h2>
+<div class="progress" id="progress"></div>
+<div id="question"></div>
+<div id="options"></div>
+<div class="explanation" id="explanation"></div>
+<button onclick="nextQuestion()">下一题</button>
+<!-- 刷题方式切换悬浮按钮 -->
+<button id="modeSwitchBtn"
+  style="position:fixed;
+         right:20px;
+         bottom:20px;
+         z-index:999;
+         background:#ff9800;
+         width:60px;
+         height:60px;
+         border-radius:50%;
+         font-size:18px;
+         font-family:inherit;
+         box-shadow:0 2px 8px rgba(0,0,0,0.15);
+         white-space:nowrap;
+         text-align: center;
+         overflow:hidden;">
+  切换
+</button>
+
+<script src="cn_questions.js?v=1"></script>
+<script src="cn_quiz.js?v=1"></script>
+</body>
+</html>
