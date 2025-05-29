@@ -69,45 +69,26 @@ if (Array.isArray(originalAnswer)) {
     nextButton.style.backgroundColor = '#cccccc';
     nextButton.style.cursor = 'not-allowed';
     
-    q.options.forEach((opt, idx) => {
-      const div = document.createElement("div");
-      div.className = "option";
-      div.innerText = opt;
-      div.onclick = () => {
-        document.querySelectorAll(".option").forEach(e => e.onclick = null); // 禁止再次点击
-        totalAnswered++;
-        if (idx === q.answer) {
-          div.classList.add("correct");
-          totalCorrect++;
-          document.getElementById("explanation").innerText = "你选对了！解析：" + q.explanation;
-        } else {
-          div.classList.add("wrong");
-          document.getElementById("explanation").innerText =
-            "你选错了！正确答案是：" +
-            q.options[q.answer] + " 解析：" + q.explanation;
-        }
-        // 在顺序模式下，根据当前试卷和题目索引计算当前题号，随机模式下使用已答题数量
-        let currentQuestionNumber = quizMode === 'ordered' ? 
-          (currentPaper - 1) * 20 + (orderedIndex - getPaperStartIndex(currentPaper)) : 
-          usedIndexes.length;
-        // 确保题号从1开始显示
-        if (quizMode === 'ordered' && currentQuestionNumber === 0) {
-          currentQuestionNumber = 1;
-        } else if (quizMode === 'ordered') {
-          currentQuestionNumber = currentQuestionNumber === 0 ? 20 : currentQuestionNumber;
-        } else {
-          currentQuestionNumber = currentQuestionNumber === 0 ? 1 : currentQuestionNumber;
-        }
-        document.getElementById("progress").innerText =
-          `当前第 ${currentQuestionNumber} 题 / 共 ${questions.length} 题    正确率：${((totalCorrect / totalAnswered) * 100).toFixed(1)}%`;
-        
-        // 启用下一题按钮
-        nextButton.disabled = false;
-        nextButton.style.backgroundColor = '#4285f4';
-        nextButton.style.cursor = 'pointer';
-      };
-      optionsDiv.appendChild(div);
-    });
+    // 打乱选项并记录新答案位置
+const originalOptions = [...q.options];
+const originalAnswer = q.answer;
+
+let shuffled = originalOptions.map((opt, idx) => ({ opt, idx }));
+shuffled = shuffled.sort(() => Math.random() - 0.5);  // 洗牌
+
+// 更新题目选项
+q.options = shuffled.map(item => item.opt);
+
+// 更新答案下标
+if (Array.isArray(originalAnswer)) {
+  // 多选题：更新为新下标
+  q.answer = originalAnswer.map(a =>
+    shuffled.findIndex(item => item.idx === a)
+  );
+} else {
+  // 单选题：找到新下标
+  q.answer = shuffled.findIndex(item => item.idx === originalAnswer);
+}
     document.getElementById("explanation").innerText = "";
   }
   
