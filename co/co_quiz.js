@@ -1,23 +1,38 @@
-// 题库变量，建议你的题库js文件导出 questions 变量，此处直接引用
-const questions = coQuestions; // 或 cnQuestions，看你页面
-
+const questions = coQuestions; // 题库变量
 let usedIndexes = [];
 let currentIndex = 0;
-let quizMode = 'random'; // 默认随机
+let quizMode = 'random'; // 默认顺序刷题
 let orderedIndex = 0;
-let currentPaper = 1;
-let totalAnswered = 0, totalCorrect = 0;
+let currentPaper = 1; // 当前试卷编号，1~6
 
 function getPaperStartIndex(paperNum) {
-  // 每套试卷20题，按你的题库分布
   return (paperNum - 1) * 20;
 }
 
-// 判断是否多选题
+// 统计变量
+let totalAnswered = 0;
+let totalCorrect = 0;
+
+// 判断多选题和单选题
 function isMulti(q) {
   return Array.isArray(q.answer);
 }
 
+// 选项内容打乱（ABCD顺序不乱）
+function shuffleOptionContents(q) {
+  const originalContent = [...q.options];
+  const shuffledContent = originalContent.slice().sort(() => Math.random() - 0.5);
+  // 重新计算正确答案的新下标
+  let showAnswer;
+  if (isMulti(q)) {
+    showAnswer = q.answer.map(ai => shuffledContent.indexOf(originalContent[ai]));
+  } else {
+    showAnswer = shuffledContent.indexOf(originalContent[q.answer]);
+  }
+  return {shuffledContent, showAnswer};
+}
+
+// 渲染题目
 function renderQuestion() {
   if (quizMode === 'random') {
     if (usedIndexes.length === questions.length) usedIndexes = [];
@@ -31,47 +46,44 @@ function renderQuestion() {
   }
   const q = questions[currentIndex];
 
-  // --------- 选项乱序处理 START ---------
-  const optionIndexArr = q.options.map((_, idx) => idx);
-  const shuffledIdx = optionIndexArr.slice().sort(() => Math.random() - 0.5);
-  const showOptions = shuffledIdx.map(i => q.options[i]);
+  // 固定选项字母，内容乱序
+  const {shuffledContent, showAnswer} = shuffleOptionContents(q);
 
-  // 乱序后新正确答案下标
-  let showAnswer;
-  if (Array.isArray(q.answer)) {
-    showAnswer = q.answer.map(ansIdx => shuffledIdx.indexOf(ansIdx));
-  } else {
-    showAnswer = shuffledIdx.indexOf(q.answer);
-  }
-  // --------- 选项乱序处理 END ---------
-
+  // 显示题目来源
   document.getElementById("meta").innerText = q.source || "";
+
   document.getElementById("question").innerText = q.question;
+  // 当前题号
   let currentQuestionNumber = quizMode === 'ordered'
     ? (currentPaper - 1) * 20 + (orderedIndex - getPaperStartIndex(currentPaper))
     : usedIndexes.length;
   if (quizMode === 'ordered' && currentQuestionNumber === 0) currentQuestionNumber = 1;
+  else if (quizMode === 'ordered') currentQuestionNumber = currentQuestionNumber === 0 ? 20 : currentQuestionNumber;
+  else currentQuestionNumber = currentQuestionNumber === 0 ? 1 : currentQuestionNumber;
   document.getElementById("progress").innerText =
     `当前第 ${currentQuestionNumber} 题 / 共 ${questions.length} 题    正确率：${totalAnswered > 0 ? ((totalCorrect / totalAnswered) * 100).toFixed(1) : '0'}%`;
 
   const optionsDiv = document.getElementById("options");
   optionsDiv.innerHTML = "";
 
+  // 禁用下一题按钮，直到选择
   const nextButton = document.querySelector('button[onclick="nextQuestion()"]');
   nextButton.disabled = true;
   nextButton.style.backgroundColor = '#cccccc';
   nextButton.style.cursor = 'not-allowed';
 
   let selected = [];
-  showOptions.forEach((opt, idx) => {
+  shuffledContent.forEach((opt, idx) => {
     const div = document.createElement("div");
     div.className = "option";
-    div.innerText = opt;
+    // 固定ABCD字母顺序
+    const optionLetter = String.fromCharCode(65 + idx);
+    div.innerText = optionLetter + ". " + opt;
     div.onclick = () => {
       document.querySelectorAll(".option").forEach(e => e.onclick = null);
       totalAnswered++;
+      // 多选
       if (Array.isArray(showAnswer)) {
-        // 多选题：需用户全选（或加确认按钮，这里自动）
         selected.push(idx);
         if (selected.length === showAnswer.length) {
           let isAllRight = selected.slice().sort().toString() === showAnswer.slice().sort().toString();
@@ -84,13 +96,14 @@ function renderQuestion() {
             showAnswer.forEach(i => optionsDiv.children[i].classList.add("correct"));
             document.getElementById("explanation").innerText =
               "有误！正确答案是：" +
-              showAnswer.map(i => showOptions[i]).join('，') + " 解析：" + q.explanation;
+              showAnswer.map(i => String.fromCharCode(65+i) + ". " + shuffledContent[i]).join('，') + " 解析：" + q.explanation;
           }
           nextButton.disabled = false;
           nextButton.style.backgroundColor = '#4285f4';
           nextButton.style.cursor = 'pointer';
         }
       } else {
+        // 单选
         if (idx === showAnswer) {
           div.classList.add("correct");
           totalCorrect++;
@@ -99,7 +112,7 @@ function renderQuestion() {
           div.classList.add("wrong");
           document.getElementById("explanation").innerText =
             "你选错了！正确答案是：" +
-            showOptions[showAnswer] + " 解析：" + q.explanation;
+            String.fromCharCode(65 + showAnswer) + ". " + shuffledContent[showAnswer] + " 解析：" + q.explanation;
         }
         nextButton.disabled = false;
         nextButton.style.backgroundColor = '#4285f4';
@@ -113,10 +126,12 @@ function renderQuestion() {
   document.getElementById("explanation").innerText = "";
 }
 
+// 下一题
 function nextQuestion() {
   renderQuestion();
 }
 
+// 切换模式
 document.getElementById('modeSwitchBtn').onclick = function() {
   if (quizMode === 'random') {
     quizMode = 'ordered';
@@ -134,7 +149,7 @@ document.getElementById('modeSwitchBtn').onclick = function() {
   renderQuestion();
 };
 
-// 左下角试卷选择
+// 新增：左下角试卷选择按钮
 (function addPaperButtons() {
   const btnContainer = document.createElement('div');
   btnContainer.id = 'paperButtonsContainer';
@@ -171,6 +186,7 @@ document.getElementById('modeSwitchBtn').onclick = function() {
   document.body.appendChild(btnContainer);
 })();
 
+// 页面加载后默认显示试卷1第1题
 window.onload = function() {
   quizMode = 'ordered';
   currentPaper = 1;
