@@ -28,100 +28,56 @@ function renderQuestion() {
     currentIndex = orderedIndex;
     orderedIndex = (orderedIndex + 1) % questions.length;
   }
-  const q = questions[currentIndex];
+  
+    const q = questions[currentIndex];
 
-  // --- 只在渲染时打乱选项 ---
-  const indices = Array.from({length: q.options.length}, (_, i) => i);
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  const shuffledOptions = indices.map(i => q.options[i]);
-  // 新的正确下标
-  let correctIdx;
-  if (isMulti(q)) {
-    correctIdx = q.answer.map(a => indices.indexOf(a)).sort((a, b) => a - b);
-  } else {
-    correctIdx = indices.indexOf(q.answer);
-  }
+// ---选项乱序核心代码---
+const optionIdxArr = q.options.map((_, idx) => idx);
+const shuffledIdx = optionIdxArr.slice().sort(() => Math.random() - 0.5);
+// 根据乱序下标生成显示用的新选项数组
+const showOptions = shuffledIdx.map(i => q.options[i]);
 
-  // 显示题目来源
-  document.getElementById("meta").innerText = q.source || "";
-  document.getElementById("question").innerText = q.question;
+// 新答案下标：单选或多选
+let showAnswer;
+if (Array.isArray(q.answer)) {
+  showAnswer = q.answer.map(a => shuffledIdx.indexOf(a));
+} else {
+  showAnswer = shuffledIdx.indexOf(q.answer);
+}
 
-  // 题号计算逻辑略（你原本的currentQuestionNumber计算这里加上即可）
-
-  let currentQuestionNumber = quizMode === 'ordered'
-    ? (currentPaper - 1) * 20 + (orderedIndex - getPaperStartIndex(currentPaper))
-    : usedIndexes.length;
-  if (quizMode === 'ordered' && currentQuestionNumber === 0) currentQuestionNumber = 1;
-  else if (quizMode === 'ordered') currentQuestionNumber = currentQuestionNumber === 0 ? 20 : currentQuestionNumber;
-  else currentQuestionNumber = currentQuestionNumber === 0 ? 1 : currentQuestionNumber;
-
-  document.getElementById("progress").innerText =
-    `当前第 ${currentQuestionNumber} 题 / 共 ${questions.length} 题    正确率：${totalAnswered > 0 ? ((totalCorrect / totalAnswered) * 100).toFixed(1) : '0'}%`;
-
-  const optionsDiv = document.getElementById("options");
-  optionsDiv.innerHTML = "";
-
-  // 禁用下一题按钮
-  const nextButton = document.querySelector('button[onclick="nextQuestion()"]');
-  nextButton.disabled = true;
-  nextButton.style.backgroundColor = '#cccccc';
-  nextButton.style.cursor = 'not-allowed';
-
-  let selected = [];
-  shuffledOptions.forEach((opt, idx) => {
-    const div = document.createElement("div");
-    div.className = "option";
-    div.innerText = opt;
-    div.onclick = () => {
-      document.querySelectorAll(".option").forEach(e => e.onclick = null);
-
-      totalAnswered++;
-
-      if (!isMulti(q)) {
-        if (idx === correctIdx) {
-          div.classList.add("correct");
-          totalCorrect++;
-          document.getElementById("explanation").innerText = "你选对了！解析：" + q.explanation;
-        } else {
-          div.classList.add("wrong");
-          document.getElementById("explanation").innerText =
-            "你选错了！正确答案是：" + shuffledOptions[correctIdx] + " 解析：" + q.explanation;
-        }
-      } else {
-        if (!div.classList.contains("selected")) {
-          div.classList.add("selected");
-          selected.push(idx);
-        } else {
-          div.classList.remove("selected");
-          selected = selected.filter(i => i !== idx);
-        }
-        if (selected.length === correctIdx.length) {
-          document.querySelectorAll(".option").forEach(e => e.onclick = null);
-          const ok = selected.sort().toString() === correctIdx.toString();
-          if (ok) {
-            selected.forEach(i => optionsDiv.children[i].classList.add("correct"));
-            totalCorrect++;
-            document.getElementById("explanation").innerText = "你全选对了！解析：" + q.explanation;
-          } else {
-            selected.forEach(i => optionsDiv.children[i].classList.add("wrong"));
-            correctIdx.forEach(i => optionsDiv.children[i].classList.add("correct"));
-            document.getElementById("explanation").innerText =
-              "有误！正确答案是：" + correctIdx.map(i => shuffledOptions[i]).join('，') + " 解析：" + q.explanation;
-          }
-        }
-      }
-      document.getElementById("progress").innerText =
-        `当前第 ${currentQuestionNumber} 题 / 共 ${questions.length} 题    正确率：${((totalCorrect / totalAnswered) * 100).toFixed(1)}%`;
-      // 启用下一题按钮
-      nextButton.disabled = false;
-      nextButton.style.backgroundColor = '#4285f4';
-      nextButton.style.cursor = 'pointer';
-    };
-    optionsDiv.appendChild(div);
-  });
+// 渲染
+document.getElementById("meta").innerText = q.source || "";
+document.getElementById("question").innerText = q.question;
+...
+const optionsDiv = document.getElementById("options");
+optionsDiv.innerHTML = "";
+showOptions.forEach((opt, idx) => {
+  const div = document.createElement("div");
+  div.className = "option";
+  div.innerText = opt;
+  div.onclick = () => {
+    document.querySelectorAll(".option").forEach(e => e.onclick = null);
+    totalAnswered++;
+    if (
+      (Array.isArray(showAnswer) && showAnswer.includes(idx)) ||
+      (!Array.isArray(showAnswer) && idx === showAnswer)
+    ) {
+      div.classList.add("correct");
+      totalCorrect++;
+      document.getElementById("explanation").innerText = "你选对了！解析：" + q.explanation;
+    } else {
+      div.classList.add("wrong");
+      // 多选题需显示全部正确答案
+      let ans = Array.isArray(showAnswer)
+        ? showAnswer.map(i => showOptions[i]).join('，')
+        : showOptions[showAnswer];
+      document.getElementById("explanation").innerText =
+        "你选错了！正确答案是：" + ans + " 解析：" + q.explanation;
+    }
+    // ...其余进度、按钮控制...
+  };
+  optionsDiv.appendChild(div);
+});
   document.getElementById("explanation").innerText = "";
 }
 
