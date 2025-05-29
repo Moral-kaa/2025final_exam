@@ -22,6 +22,27 @@ const questions = coQuestions;
       orderedIndex = (orderedIndex + 1) % questions.length;
     }
     const q = questions[currentIndex];
+// 打乱选项并记录新答案位置
+const originalOptions = [...q.options];
+const originalAnswer = q.answer;
+
+let shuffled = originalOptions.map((opt, idx) => ({ opt, idx }));
+shuffled = shuffled.sort(() => Math.random() - 0.5);  // 洗牌
+
+// 更新题目选项
+q.options = shuffled.map(item => item.opt);
+
+// 更新答案下标
+if (Array.isArray(originalAnswer)) {
+  // 多选题：更新为新下标
+  q.answer = originalAnswer.map(a =>
+    shuffled.findIndex(item => item.idx === a)
+  );
+} else {
+  // 单选题：找到新下标
+  q.answer = shuffled.findIndex(item => item.idx === originalAnswer);
+}
+    
     // 显示题目来源
     document.getElementById("meta").innerText = q.source || "";
     document.getElementById("question").innerText = q.question;
